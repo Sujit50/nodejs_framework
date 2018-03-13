@@ -25,8 +25,8 @@ limiter({
     }
 });
 
-router.get('/', function(req, res, next) {
-    res.render('index', {name: 'Sujit'});
+router.get('/', function (req, res, next) {
+    res.render('index', { name: 'Sujit' });
 });
 router.get('/list', battleController.getDistinctLocation);
 router.get('/count', battleController.getBattleCount);
@@ -34,4 +34,4 @@ router.get('/stats', battleController.getBattleStats);
 router.get('/search', battleController.getSearchResults);
 
 module.exports = router;
-module.exports.routeName = '';
+module.exports.routeName = 'user';

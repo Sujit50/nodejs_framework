@@ -19,24 +19,35 @@ export default class BattleController {
 
     async getBattleStats(req, res) {
         let _this = exports.default;
-        let battle_type = await _this.statsQueryBuilder([{'$match' : {'battle_type': {'$ne': ''}}},{'$group':{_id: '$battle_type'}}]);
-
+        let [battle_type, attacker_king, defender_king, region, name, win, loss, average, min, max] = 
+        await Promise.all([
+            _this.statsQueryBuilder([{ '$match': { 'battle_type': { '$ne': '' } } }, { '$group': { _id: '$battle_type' } }]),
+            _this.statsQueryBuilder([{"$sortByCount": '$attacker_king'}], "_id"),
+            _this.statsQueryBuilder([{"$sortByCount": "$defender_king"}], "_id"),
+            _this.statsQueryBuilder([{"$sortByCount": "$region"}], "_id"),
+            _this.statsQueryBuilder([{"$sortByCount": "$name"}], "_id"),
+            _this.statsQueryBuilder([{'$match' : {'attacker_outcome': 'win'}}, {"$sortByCount": "$attacker_outcome"}], "count"),
+            _this.statsQueryBuilder([{'$match' : {'attacker_outcome': 'loss'}}, {"$sortByCount": "$attacker_outcome"}], "count"),
+            _this.statsQueryBuilder([{'$match' : {'defender_size': {'$ne': ''}}},{'$group': {_id: null, avg: {'$avg':"$defender_size"}}}], 'avg'),
+            _this.statsQueryBuilder([{'$match' : {'defender_size': {'$ne': ''}}},{'$group': {_id: null, min: {'$min':"$defender_size"}}}], 'min'),
+            _this.statsQueryBuilder([{'$match' : {'defender_size': {'$ne': ''}}},{'$group': {_id: null, max: {'$max':"$defender_size"}}}], 'max')
+        ]);
         let responseData = {
             'most_active': {
-                'attacker_king': await _this.statsQueryBuilder([{"$sortByCount": '$attacker_king'}], "_id"),
-                'defender_king': await _this.statsQueryBuilder([{"$sortByCount": "$defender_king"}], "_id"),
-                'region': await _this.statsQueryBuilder([{"$sortByCount": "$region"}], "_id"),
-                'name': await _this.statsQueryBuilder([{"$sortByCount": "$name"}], "_id"),
+                'attacker_king': attacker_king,
+                'defender_king': defender_king,
+                'region': region,
+                'name': name,
             },
             'attacker_outcome': {
-                'win': await _this.statsQueryBuilder([{'$match' : {'attacker_outcome': 'win'}}, {"$sortByCount": "$attacker_outcome"}], "count"),
-                'loss': await _this.statsQueryBuilder([{'$match' : {'attacker_outcome': 'loss'}}, {"$sortByCount": "$attacker_outcome"}], "count"),
+                'win': win,
+                'loss': loss,
             },
             'battle_type': _.pluck(battle_type, '_id'),
             'defender_size': {
-                'average': await _this.statsQueryBuilder([{'$match' : {'defender_size': {'$ne': ''}}},{'$group': {_id: null, avg: {'$avg':"$defender_size"}}}], 'avg'),
-                'min': await _this.statsQueryBuilder([{'$match' : {'defender_size': {'$ne': ''}}},{'$group': {_id: null, min: {'$min':"$defender_size"}}}], 'min'),
-                'max': await _this.statsQueryBuilder([{'$match' : {'defender_size': {'$ne': ''}}},{'$group': {_id: null, max: {'$max':"$defender_size"}}}], 'max')
+                'average': average,
+                'min': min,
+                'max': max,
             }
         }
         return res.json({ status: 'success', data: responseData });

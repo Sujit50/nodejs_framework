@@ -6,8 +6,8 @@ import mongoose from 'mongoose';
 import debug from 'debug';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
+import fs from 'fs';
 import mustacheExpress from 'mustache-express';
-import index from './routes/index';
 
 dotenv.config();
 
@@ -17,6 +17,7 @@ const port = process.env.NODE_PORT || 8000;
 const log = {
 	error: debug('app:error'),
 	success: debug('app:success'),
+	debug: debug('app:debug'),
 };
 
 // DB CONNECT START
@@ -43,7 +44,14 @@ app.use(express.static('public'));
 app.set('views', 'views');
 app.engine('html', mustacheExpress());
 app.set('view engine', 'html');
-app.use('/', index);
+
+fs.readdir(__dirname+'/routes', (err, files) => {
+	files.forEach(routeFile => {
+		log.debug(`Route registered ${routeFile}`);
+		let fileContent = require(__dirname + '/routes/' + routeFile);
+		app.use(`/${fileContent.routeName}`, fileContent);
+	});
+})
 
 app.listen(port, () => {
 	console.log(`Express server listening at port ${port}`)
